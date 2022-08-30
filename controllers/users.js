@@ -1,14 +1,12 @@
 const { NODE_ENV, JWT_SECRET } = process.env;
 const SOLT = 10;
 
-const { ObjectId } = require('mongoose').Types;
 const bcryptjs = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const NotValidError = require('../errors/notValidError');
 const ConflictError = require('../errors/conflictError');
 const NotAuthError = require('../errors/unAuthError');
-const NotFoundError = require('../errors/notFoundError');
 
 module.exports.createUser = (req, res, next) => {
   const {
@@ -74,32 +72,9 @@ module.exports.authorizedUser = (req, res, next) => {
       const data = {
         name: user.name,
         email: user.email,
-        _id: user._id,
+        // _id: user._id,
       };
       res.send({ data });
-    })
-    .catch(next);
-};
-
-// module.exports.getUsers = (req, res, next) => {
-//   User.find({})
-//     .then((users) => res.send(users))
-//     .catch(next);
-// };
-
-module.exports.getUserById = (req, res, next) => {
-  User.findById(req.params.id)
-    .then((user) => {
-      if (!user) {
-        throw new NotFoundError('Пользователь не найден!');
-      }
-      res.send(user);
-    })
-    .catch((err) => {
-      if (!ObjectId.isValid(req.params.id)) {
-        throw new NotValidError('Данные пользователя не верны!');
-      }
-      throw err;
     })
     .catch(next);
 };
