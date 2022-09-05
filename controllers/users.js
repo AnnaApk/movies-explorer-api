@@ -48,7 +48,7 @@ module.exports.login = (req, res, next) => {
   User.findOne({ email }).select('+password')
     .then((user) => {
       if (!user) {
-        throw new NotAuthError('Данные не верны!');
+        throw new NotAuthError('Неправильная почта или пароль!');
       }
       return Promise.all([
         user,
@@ -57,7 +57,7 @@ module.exports.login = (req, res, next) => {
     })
     .then(([user, isPasswordCorrect]) => {
       if (!isPasswordCorrect) {
-        throw new NotAuthError('Данные не верны!');
+        throw new NotAuthError('Неправильная почта или пароль!');
       }
       return jwt.sign({ _id: user._id }, NODE_ENV === 'production' ? JWT_SECRET : 'dev-secret', { expiresIn: '7d' });
     })
@@ -72,7 +72,6 @@ module.exports.authorizedUser = (req, res, next) => {
       const data = {
         name: user.name,
         email: user.email,
-        // _id: user._id,
       };
       res.send({ data });
     })
@@ -82,22 +81,29 @@ module.exports.authorizedUser = (req, res, next) => {
 module.exports.patchUser = (req, res, next) => {
   const user = req.user._id;
   const { name, email } = req.body;
-  User.findByIdAndUpdate(
-    user,
-    { name, email },
-    { new: true, runValidators: true },
-  )
-    .then((patchedUser) => {
-      if (!patchedUser) {
-        throw new NotAuthError('Пользователь не найден!');
+  User.exists({ email })
+    .then((exist) => {
+      if (exist) {
+        throw new ConflictError('Такой email уже занят!');
       }
-      res.send(patchedUser);
-    })
-    .catch((err) => {
-      if (err.name === 'ValidationError') {
-        throw new NotValidError('Данные пользователя не верны!');
-      }
-      throw err;
+      User.findByIdAndUpdate(
+        user,
+        { name, email },
+        { new: true, runValidators: true },
+      )
+        .then((patchedUser) => {
+          if (!patchedUser) {
+            throw new NotAuthError('Пользователь не найден!');
+          }
+          res.send(patchedUser);
+        })
+        .catch((err) => {
+          if (err.name === 'ValidationError') {
+            throw new NotValidError('Данные пользователя не верны!');
+          }
+          throw err;
+        })
+        .catch(next);
     })
     .catch(next);
 };

@@ -5,7 +5,9 @@ const mongoose = require('mongoose');
 const bodyParse = require('body-parser');
 const helmet = require('helmet');
 const process = require('process');
-const { celebrate, Joi, errors } = require('celebrate');
+const { errors } = require('celebrate');
+
+const { NODE_ENV, DB } = process.env;
 
 const cors = require('cors');
 
@@ -24,7 +26,8 @@ const NotFoundError = require('./errors/notFoundError');
 const { isAuthorized } = require('./middlewares/auth');
 const userRoute = require('./routes/users');
 const movieRoute = require('./routes/movies');
-const { login, createUser } = require('./controllers/users');
+const signupRoute = require('./routes/signup');
+const signinRoutr = require('./routes/signin');
 
 const { PORT = 3000 } = process.env;
 
@@ -36,30 +39,17 @@ app.use(bodyParse.json());
 app.use(bodyParse.urlencoded({ extended: true }));
 app.use(helmet());
 
-mongoose.connect('mongodb://localhost:27017/moviesdb', { useNewUrlParser: true });
+mongoose.connect(NODE_ENV === 'production' ? DB : 'mongodb://localhost:27017/moviesdb', { useNewUrlParser: true });
 
 app.use(requestLogger);
 
 app.use(limiter);
 
-app.post('/signup', celebrate({
-  body: Joi.object().keys({
-    email: Joi.string().required().email(),
-    password: Joi.string().required(),
-    name: Joi.string().min(2).max(30),
-  }),
-}), createUser);
-
-app.post('/signin', celebrate({
-  body: Joi.object().keys({
-    email: Joi.string().required().email(),
-    password: Joi.string().required(),
-  }),
-}), login);
-
+app.use(signupRoute);
+app.use(signinRoutr);
 app.use(isAuthorized);
-app.use('/', userRoute);
-app.use('/', movieRoute);
+app.use(userRoute);
+app.use(movieRoute);
 
 app.use((req, res, next) => {
   const err = new NotFoundError('Route is not defauned!');
@@ -70,13 +60,11 @@ app.use(errorLogger);
 
 app.use(errors());
 
-// eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
   if (err.statusCode) {
     return res.status(err.statusCode).send({ message: err.message });
   }
-
-  console.log(err.stack);
+  next();
   return res.status(500).send({ message: 'Server Error' });
 });
 

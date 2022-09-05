@@ -54,5 +54,11 @@ module.exports.deleteMovieById = (req, res, next) => {
       return movie.remove()
         .then(() => res.status(200).send(movie));
     })
+    .catch((err) => {
+      if (err.name === 'CastError') {
+        throw new NotValidError('Данные фильма не верны!');
+      }
+      throw err;
+    })
     .catch(next);
 };
