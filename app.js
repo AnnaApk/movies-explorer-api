@@ -21,7 +21,7 @@ const options = [
 ];
 
 const { requestLogger, errorLogger } = require('./middlewares/logger');
-const { limiter } = require('./middlewares/limiter');
+// const { limiter } = require('./middlewares/limiter');
 const NotFoundError = require('./errors/notFoundError');
 const { isAuthorized } = require('./middlewares/auth');
 const userRoute = require('./routes/users');
@@ -43,7 +43,7 @@ mongoose.connect(NODE_ENV === 'production' ? DB : 'mongodb://localhost:27017/mov
 
 app.use(requestLogger);
 
-app.use(limiter);
+// app.use(limiter);
 
 app.use(signupRoute);
 app.use(signinRoutr);
