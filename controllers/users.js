@@ -84,7 +84,11 @@ module.exports.patchUser = (req, res, next) => {
   User.exists({ email })
     .then((exist) => {
       if (exist) {
-        throw new ConflictError('Такой email уже занят!');
+        if (exist._id.toString() !== user.toString()) {
+          // if (exist._id === user)
+          // throw new ConflictError(`${exist._id}, ${user}`);
+          throw new ConflictError('Такой email уже занят!');
+        }
       }
       User.findByIdAndUpdate(
         user,
